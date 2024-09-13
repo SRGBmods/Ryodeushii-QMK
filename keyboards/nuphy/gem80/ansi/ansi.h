@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
+#include "color.h"
 #include "quantum_keycodes.h"
 
 enum custom_keycodes {
@@ -65,6 +66,11 @@ enum custom_keycodes {
     DEBOUNCE_RELEASE_DEC,
     DEBOUNCE_RELEASE_SHOW,
     TOG_DEEP_SLEEP,
+    TOG_BAT_IND_NUM,
+    SOCDON,
+    SOCDOFF,
+    SOCDTOG,
+    FW_VERSION,
 };
 
 #define MAC_PRT G(S(KC_3))
@@ -87,15 +93,23 @@ typedef struct {
     uint8_t side_speed;
     uint8_t side_rgb;
     uint8_t side_color;
+    uint8_t side_use_custom_color : 1;
+    HSV     side_custom_color;
+
     // logo light config
     uint8_t logo_mode;
     uint8_t logo_brightness;
     uint8_t logo_speed;
     uint8_t logo_rgb;
     uint8_t logo_color;
+    uint8_t logo_use_custom_color : 1;
+    HSV     logo_custom_color;
     uint8_t battery_indicator_brightness;
     // custom keys highlight
     uint8_t toggle_custom_keys_highlight : 1;
+    uint8_t detect_numlock_state : 1;
+    uint8_t battery_indicator_numeric : 1;
+    uint8_t show_socd_indicator : 1;
 } kb_config_t;
 
 #ifdef VIA_ENABLE
@@ -112,18 +126,27 @@ enum via_indicator_value {
     id_side_light_speed      = 11,
     id_side_light_color      = 12,
     id_side_light_brightness = 13,
+    id_side_use_custom_color = 14,
+    id_side_custom_color     = 15,
     // logo light controls
     id_logo_light_mode              = 20,
     id_logo_light_speed             = 21,
     id_logo_light_color             = 22,
     id_logo_light_brightness        = 23,
+    id_logo_use_custom_color        = 24,
+    id_logo_custom_color            = 25,
     id_battery_indicator_brightness = 31,
-    id_toggle_custom_keys_highlight            = 32,
+    id_toggle_custom_keys_highlight = 32,
+    id_toggle_detect_numlock_state  = 33,
+    id_battery_indicator_numeric    = 34,
+    id_toggle_socd_indicator        = 35,
 };
 
 // function declaration
 void indicator_config_set_value(uint8_t *data);
 void indicator_config_get_value(uint8_t *data);
+void _set_color(HSV *color, uint8_t *data);
+void _get_color(HSV *color, uint8_t *data);
 #endif
 
 extern kb_config_t g_config;

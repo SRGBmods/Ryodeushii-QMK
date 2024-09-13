@@ -65,7 +65,7 @@ extern uint8_t            logo_mode;
 extern uint8_t            logo_light;
 extern uint8_t            logo_speed;
 extern uint8_t            logo_rgb;
-extern uint8_t            logo_colour;
+extern uint8_t            logo_color;
 
 /**
  * @brief  gpio initial.
@@ -427,10 +427,6 @@ void toggle_usb_sleep(void) {
  * @brief Toggle caps indication between side led / under key / off
  */
 void toggle_caps_indication(void) {
-#if CONSOLE_ENABLE
-    xprintf("CPU_CLOCK %u \n", CPU_CLOCK);
-#endif
-
     if (g_config.caps_indicator_type == CAPS_INDICATOR_OFF) {
         g_config.caps_indicator_type = CAPS_INDICATOR_SIDE; // set to initial state, when last state reached
     } else {
@@ -466,7 +462,7 @@ void update_bat_pct_rgb(void) {
         .v = 128, // 50% max brightness
     };
 
-    bat_pct_rgb = hsv_to_rgb_nocie(hsv); // this results in same calculation as colour pickers.
+    bat_pct_rgb = hsv_to_rgb_nocie(hsv); // this results in same calculation as color pickers.
 }
 
 /**
@@ -481,7 +477,7 @@ void user_set_rgb_color(int index, uint8_t red, uint8_t green, uint8_t blue) {
 }
 
 uint8_t get_led_index(uint8_t row, uint8_t col) {
-   return g_led_config.matrix_co[row][col];
+    return g_led_config.matrix_co[row][col];
 }
 
 /**

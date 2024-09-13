@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "action.h"
+#include "common/features/socd_cleaner.h"
 #include "config.h"
 #include "host.h"
 #include "keycodes.h"
@@ -58,15 +59,15 @@ bool pre_process_record_kb(uint16_t keycode, keyrecord_t *record) {
 
     // wakeup check for light sleep/no sleep - fire this immediately to not lose wake keys.
     if (f_wakeup_prepare) {
-#if CONSOLE_ENABLE
-        xprintf("Early wake with keycode |  %u | and record pressed? ( %u )\n", keycode, record->event.pressed);
-#endif
         f_wakeup_prepare = 0;
         if (g_config.sleep_toggle) exit_light_sleep();
     }
 
     return pre_process_record_user(keycode, record);
 }
+
+socd_cleaner_t socd_v = {{KC_W, KC_S}, SOCD_CLEANER_LAST};
+socd_cleaner_t socd_h = {{KC_A, KC_D}, SOCD_CLEANER_LAST};
 
 /* qmk process record */
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
@@ -76,14 +77,13 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!process_record_user(keycode, record)) {
         return false;
     }
-
-#if CONSOLE_ENABLE
-    uint8_t row     = record->event.key.row;
-    uint8_t col     = record->event.key.col;
-    uint8_t led_idx = get_led_index(row, col);
-    xprintf("KL: row: %u, column: %u, led_idx: %u, pressed: %u\n", row, col, led_idx, record->event.pressed);
-    // rgb_matrix_set_color(led_idx, 0xff,0xff,0xff);
-#endif
+    // socd handling
+    if (!process_socd_cleaner(keycode, record, &socd_v)) {
+        return false;
+    }
+    if (!process_socd_cleaner(keycode, record, &socd_h)) {
+        return false;
+    }
 
     switch (keycode) {
         case RF_DFU:
@@ -386,6 +386,32 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 toggle_power_on_animation();
             }
             return false;
+        case TOG_BAT_IND_NUM:
+            if (record->event.pressed) {
+                g_config.battery_indicator_numeric = !g_config.battery_indicator_numeric;
+                save_config_to_eeprom();
+            }
+            return false;
+        case SOCDON: // Turn SOCD Cleaner on.
+            if (record->event.pressed) {
+                socd_cleaner_enabled = true;
+            }
+            return false;
+        case SOCDOFF: // Turn SOCD Cleaner off.
+            if (record->event.pressed) {
+                socd_cleaner_enabled = false;
+            }
+            return false;
+        case SOCDTOG: // Toggle SOCD Cleaner.
+            if (record->event.pressed) {
+                socd_cleaner_enabled = !socd_cleaner_enabled;
+            }
+            return false;
+        case FW_VERSION:
+            if (record->event.pressed) {
+                SEND_STRING(CFW_VERSION);
+            }
+            return false;
 
         default:
             return true;
@@ -440,15 +466,24 @@ bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
         rgb_matrix_set_color(two_digit_ones_led(g_config.sleep_timeout), 0x00, 0x80, 0x80);
     }
 
-    uint8_t showNumLock = 0;
-    if (dev_info.link_mode != LINK_USB) {
-        showNumLock = dev_info.rf_led & 0x01;
-    } else {
-        showNumLock = host_keyboard_led_state().num_lock;
+    if (g_config.show_socd_indicator && socd_cleaner_enabled) {
+        rgb_matrix_set_color(get_led_index(2, 2), RGB_BLUE);
+        rgb_matrix_set_color(get_led_index(3, 2), RGB_BLUE);
+        rgb_matrix_set_color(get_led_index(3, 1), RGB_BLUE);
+        rgb_matrix_set_color(get_led_index(3, 3), RGB_BLUE);
     }
 
-    if (showNumLock) {
-        rgb_matrix_set_color(get_led_index(0, 14), 0x00, 0x80, 0x00);
+    if (g_config.detect_numlock_state) {
+        uint8_t showNumLock = 0;
+        if (dev_info.link_mode != LINK_USB) {
+            showNumLock = dev_info.rf_led & 0x01;
+        } else {
+            showNumLock = host_keyboard_led_state().num_lock;
+        }
+
+        if (showNumLock) {
+            rgb_matrix_set_color(get_led_index(0, 14), 0x00, 0x80, 0x00);
+        }
     }
 
     rgb_matrix_set_color(RGB_MATRIX_LED_COUNT - 1, 0, 0, 0);
@@ -481,6 +516,8 @@ bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
                                 }
                             } else if (keycode > KC_NUM_LOCK && keycode <= KC_KP_DOT) {
                                 rgb_matrix_set_color(index, RGB_RED);
+                            } else if (keycode >= SOCDON && keycode <= SOCDTOG) {
+                                rgb_matrix_set_color(index, RGB_BLUE);
                             } else if (keycode > KC_TRNS) {
                                 rgb_matrix_set_color(index, 225, 65, 140);
                             }
@@ -489,6 +526,11 @@ bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
                 }
             }
         }
+    }
+
+    if (f_bat_hold && g_config.battery_indicator_numeric) {
+        rgb_matrix_set_color(two_digit_decimals_led(dev_info.rf_battery), 0x00, 0x80, 0x80);
+        rgb_matrix_set_color(two_digit_ones_led(dev_info.rf_battery), 0x00, 0x80, 0x80);
     }
 
     return rgb_matrix_indicators_advanced_user(led_min, led_max);
@@ -522,7 +564,7 @@ void init_g_config(void) {
     g_config.sleep_timeout                = DEFAULT_SLEEP_TIMEOUT;
     g_config.power_show                   = DEFAULT_TOGGLE_POWER_ON_ANIMATION;
     g_config.debounce_press_ms            = DEBOUNCE;
-    g_config.debounce_release_ms          = DEBOUNCE;
+    g_config.debounce_release_ms          = RELEASE_DEBOUNCE;
     g_config.caps_indicator_type          = DEFAULT_CAPS_INDICATOR_TYPE;
     g_config.side_mode_a                  = DEFAULT_SIDE_MODE_A;
     g_config.side_mode_b                  = DEFAULT_SIDE_MODE_B;
@@ -532,6 +574,11 @@ void init_g_config(void) {
     g_config.side_color                   = DEFAULT_SIDE_COLOR;
     g_config.battery_indicator_brightness = DEFAULT_BATTERY_INDICATOR_BRIGHTNESS;
     g_config.toggle_custom_keys_highlight = DEFAULT_LIGHT_CUSTOM_KEYS;
+    g_config.detect_numlock_state         = DEFAULT_DETECT_NUMLOCK;
+    g_config.side_use_custom_color        = DEFAULT_SIDE_USE_CUSTOM_COLOR;
+    g_config.side_custom_color            = rgb_matrix_get_hsv();
+    g_config.battery_indicator_numeric    = DEFAULT_BATTERY_INDICATOR_NUMERIC;
+    g_config.show_socd_indicator          = DEFAULT_SHOW_SOCD_INDICATOR;
 }
 
 void load_config_from_eeprom(void) {
@@ -617,10 +664,22 @@ void via_config_set_value(uint8_t *data) {
         case id_toggle_custom_keys_highlight:
             g_config.toggle_custom_keys_highlight = *value_data;
             break;
+        case id_toggle_detect_numlock_state:
+            g_config.detect_numlock_state = *value_data;
+            break;
+        case id_side_use_custom_color:
+            g_config.side_use_custom_color = *value_data;
+            break;
+        case id_side_custom_color:
+            _set_color(&(g_config.side_custom_color), value_data);
+            break;
+        case id_battery_indicator_numeric:
+            g_config.battery_indicator_numeric = *value_data;
+            break;
+        case id_toggle_socd_indicator:
+            g_config.show_socd_indicator = *value_data;
+            break;
     }
-#    if CONSOLE_ENABLE
-    xprintf("[SET]VALUE_ID: %u DATA: %u\n", *value_id, *value_data);
-#    endif
 }
 
 void via_config_get_value(uint8_t *data) {
@@ -674,11 +733,22 @@ void via_config_get_value(uint8_t *data) {
         case id_toggle_custom_keys_highlight:
             *value_data = g_config.toggle_custom_keys_highlight;
             break;
+        case id_toggle_detect_numlock_state:
+            *value_data = g_config.detect_numlock_state;
+            break;
+        case id_side_use_custom_color:
+            *value_data = g_config.side_use_custom_color;
+            break;
+        case id_side_custom_color:
+            _get_color(&(g_config.side_custom_color), value_data);
+            break;
+        case id_battery_indicator_numeric:
+            *value_data = g_config.battery_indicator_numeric;
+            break;
+        case id_toggle_socd_indicator:
+            *value_data = g_config.show_socd_indicator;
+            break;
     }
-#    if CONSOLE_ENABLE
-    xprintf("[GET]VALUE_ID: %u DATA: %u\n", *value_id, *value_data);
-    xprintf("G_CONFIG_SIZE: %u \n", sizeof(g_config));
-#    endif
 }
 
 void via_custom_value_command_kb(uint8_t *data, uint8_t length) {
@@ -739,3 +809,14 @@ const is31_led PROGMEM g_is31_leds[RGB_MATRIX_LED_COUNT] = {
 
     {0, D_12, E_12, F_12}, {0, D_13, E_13, F_13}, {0, D_14, E_14, F_14}, {0, D_15, E_15, F_15}, {0, D_16, E_16, F_16}, {0, G_16, H_16, I_16}, {0, G_15, H_15, I_15}, {0, G_14, H_14, I_14}, {0, G_13, H_13, I_13}, {0, G_12, H_12, I_12}, {0, G_11, H_11, I_11}, {0, G_10, H_10, I_10}, {0, G_9, H_9, I_9},    {0, J_16, K_16, L_16}, {0, J_15, K_15, L_15}, {0, J_14, K_14, L_14}, {0, J_13, K_13, L_13}, {1, D_16, E_16, F_16}, {1, D_15, E_15, F_15}, {1, D_14, E_14, F_14}, {1, D_13, E_13, F_13}, {1, D_12, E_12, F_12}, {1, D_11, E_11, F_11}, {1, D_10, E_10, F_10}, {1, D_9, E_9, F_9}, {1, G_7, H_7, I_7}, {1, G_8, H_8, I_8}, {1, G_9, H_9, I_9}, {1, G_10, H_10, I_10}, {1, G_11, H_11, I_11}, {1, G_12, H_12, I_12}, {1, G_13, H_13, I_13}, {1, G_14, H_14, I_14}, {1, G_15, H_15, I_15}, {1, G_16, H_16, I_16},
 };
+
+// Some helpers for setting/getting HSV
+void _set_color(HSV *color, uint8_t *data) {
+    color->h = data[0];
+    color->s = data[1];
+}
+
+void _get_color(HSV *color, uint8_t *data) {
+    data[0] = color->h;
+    data[1] = color->s;
+}

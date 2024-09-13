@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
+#include "color.h"
 #include "quantum_keycodes.h"
 
 enum custom_keycodes {
@@ -61,6 +62,11 @@ enum custom_keycodes {
     DEBOUNCE_RELEASE_SHOW,
     TOG_DEEP_SLEEP,
     TOG_POWER_ON_ANIMATION,
+    TOG_BAT_IND_NUM,
+    SOCDON,
+    SOCDOFF,
+    SOCDTOG,
+    FW_VERSION,
 };
 
 #define MAC_PRT G(S(KC_3))
@@ -84,10 +90,15 @@ typedef struct {
     uint8_t side_speed;
     uint8_t side_rgb;
     uint8_t side_color;
+    uint8_t side_use_custom_color : 1;
+    HSV     side_custom_color;
     uint8_t power_show : 1;
     uint8_t battery_indicator_brightness;
     // custom keys highlight
     uint8_t toggle_custom_keys_highlight : 1;
+    uint8_t detect_numlock_state : 1;
+    uint8_t battery_indicator_numeric : 1;
+    uint8_t show_socd_indicator : 1;
 } kb_config_t;
 
 #ifdef VIA_ENABLE
@@ -105,14 +116,21 @@ enum via_indicator_value {
     id_side_light_speed             = 12,
     id_side_light_color             = 13,
     id_side_light_brightness        = 14,
+    id_side_use_custom_color        = 15,
+    id_side_custom_color            = 16,
     id_power_on_animation           = 20,
     id_battery_indicator_brightness = 21,
-    id_toggle_custom_keys_highlight            = 22,
+    id_toggle_custom_keys_highlight = 22,
+    id_toggle_detect_numlock_state  = 23,
+    id_battery_indicator_numeric    = 24,
+    id_toggle_socd_indicator        = 25,
 };
 
 // function declaration
 void indicator_config_set_value(uint8_t *data);
 void indicator_config_get_value(uint8_t *data);
+void _set_color(HSV *color, uint8_t *data);
+void _get_color(HSV *color, uint8_t *data);
 #endif
 
 extern kb_config_t g_config;

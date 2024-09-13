@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ansi.h"
-#include "keycodes.h"
+#include "quantum.h"
 #include "quantum_keycodes.h"
 #include QMK_KEYBOARD_H
 
@@ -19,7 +19,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // layer Mac Fn
 #if(WORK_MODE == THREE_MODE)
 [1] = LAYOUT_tkl_f13_ansi(
-	_______, 	KC_F1,  	KC_F2,  	KC_F3, 		KC_F4,  	KC_F5,  	KC_F6,  	KC_F7,  	KC_F8,  	KC_F9, 		KC_F10, 	KC_F11, 	KC_F12, 	TG(7),	    MAC_PRT,    _______,		_______,
+	TOG_BAT_IND_NUM, 	KC_F1,  	KC_F2,  	KC_F3, 		KC_F4,  	KC_F5,  	KC_F6,  	KC_F7,  	KC_F8,  	KC_F9, 		KC_F10, 	KC_F11, 	KC_F12, 	TG(7),	    MAC_PRT,    _______,		_______,
 	_______, 	LNK_BLE1,  	LNK_BLE2,  	LNK_BLE3,  	LNK_RF,   	_______,   	_______,   	_______,   	_______,   	_______,  	_______,   	_______,	_______,    _______, 	    DEBOUNCE_PRESS_DEC,	    DEBOUNCE_PRESS_SHOW,	DEBOUNCE_PRESS_INC,
     _______, 	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	TOG_DEEP_SLEEP,  	TOG_USB_SLP,   	DEV_RESET,	SLEEP_MODE, BAT_SHOW,	DEBOUNCE_RELEASE_DEC,	DEBOUNCE_RELEASE_SHOW,	DEBOUNCE_RELEASE_INC,
 	TOG_CAPS_IND,	SLEEP_TIMEOUT_DEC,   	SLEEP_TIMEOUT_SHOW,   	SLEEP_TIMEOUT_INC,  	_______,   	_______,   	_______,	_______,   	_______,   	_______,  	_______,	_______, 	 			_______,
@@ -45,7 +45,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // layer win Fn
 #if(WORK_MODE == THREE_MODE)
 [3] = LAYOUT_tkl_f13_ansi(
-	_______, 	KC_BRID,  	KC_BRIU,  	_______, 	_______,  	_______,  	_______,  	KC_MPRV,  	KC_MPLY,  	KC_MNXT, 	KC_MUTE, 	KC_VOLD, 	KC_VOLU, 	TG(7),	   	KC_PSCR,    KC_TRNS,    WIN_LOCK,
+	TOG_BAT_IND_NUM, 	KC_BRID,  	KC_BRIU,  	SOCDON, 	SOCDOFF,  	SOCDTOG,  	_______,  	KC_MPRV,  	KC_MPLY,  	KC_MNXT, 	KC_MUTE, 	KC_VOLD, 	KC_VOLU, 	TG(7),	   	KC_PSCR,    KC_TRNS,    WIN_LOCK,
 	_______, 	LNK_BLE1,  	LNK_BLE2,  	LNK_BLE3,  	LNK_RF,   	_______,   	_______,   	_______,   	_______,   	_______,  	_______,   	_______,	_______,    _______, 	    DEBOUNCE_PRESS_DEC,	    DEBOUNCE_PRESS_SHOW,	DEBOUNCE_PRESS_INC,
     _______, 	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	TOG_DEEP_SLEEP,  	TOG_USB_SLP,   	DEV_RESET,	SLEEP_MODE, BAT_SHOW,	DEBOUNCE_RELEASE_DEC,	DEBOUNCE_RELEASE_SHOW,	DEBOUNCE_RELEASE_INC,
 	TOG_CAPS_IND,	SLEEP_TIMEOUT_DEC,   	SLEEP_TIMEOUT_SHOW,   	SLEEP_TIMEOUT_INC,  	_______,   	_______,   	_______,	_______,   	_______,   	_______,  	_______,	_______, 	 			_______,
@@ -53,7 +53,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	_______,	_______,	_______,										_______, 							_______,	_______,   	MO(3),		_______,				RGB_MOD,    RGB_VAD,	RGB_HUI),
 #else
 [3] = LAYOUT_tkl_f13_ansi(
-	_______, 	KC_BRID,  	KC_BRIU,  	_______, 	_______,  	_______,  	_______,  	KC_MPRV,  	KC_MPLY,  	KC_MNXT, 	KC_MUTE, 	KC_VOLD, 	KC_VOLU, 	TG(7),	   	KC_PSCR,    KC_TRNS,    WIN_LOCK,
+	_______, 	KC_BRID,  	KC_BRIU,  	SOCDON, 	SOCDOFF,  	SOCDTOG,  	_______,  	KC_MPRV,  	KC_MPLY,  	KC_MNXT, 	KC_MUTE, 	KC_VOLD, 	KC_VOLU, 	TG(7),	   	KC_PSCR,    KC_TRNS,    WIN_LOCK,
 	_______,    _______,    _______,    _______,    _______,  	_______,   	_______,   	_______,   	_______,   	_______,  	_______,   	_______,	_______,    _______, 	    DEBOUNCE_PRESS_DEC,	    DEBOUNCE_PRESS_SHOW,	DEBOUNCE_PRESS_INC,
     _______, 	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	_______,   	_______,  	TOG_USB_SLP,   	DEV_RESET,	SLEEP_MODE, 	_______,	DEBOUNCE_RELEASE_DEC,	DEBOUNCE_RELEASE_SHOW,	DEBOUNCE_RELEASE_INC,
 	TOG_CAPS_IND,	SLEEP_TIMEOUT_DEC,   	SLEEP_TIMEOUT_SHOW,   	SLEEP_TIMEOUT_INC,  	_______,   	_______,   	_______,	_______,   	_______,   	_______,  	_______,	_______, 	 			_______,
@@ -85,4 +85,3 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	_______,	_______,	_______,										_______, 							_______,	_______,   	_______,		_______,			_______,    _______,	_______),
 };
 // clang-format on
-
